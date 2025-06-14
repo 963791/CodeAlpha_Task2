@@ -1,41 +1,27 @@
 import streamlit as st
-import nltk
-import os
 import string
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 
-# Ensure nltk data is available
-nltk_data_path = os.path.join(os.getcwd(), "nltk_data")
-nltk.data.path.append(nltk_data_path)
-if not os.path.exists(os.path.join(nltk_data_path, "tokenizers/punkt")):
-    nltk.download("punkt", download_dir=nltk_data_path)
-if not os.path.exists(os.path.join(nltk_data_path, "corpora/stopwords")):
-    nltk.download("stopwords", download_dir=nltk_data_path)
-
-# Sample FAQs
+# FAQs (add your own)
 faqs = {
-    "What is your return policy?": "You can return any item within 30 days for a full refund.",
-    "How do I track my order?": "Use the tracking link sent to your email after the order is shipped.",
-    "What payment methods are accepted?": "We accept credit cards, debit cards, and PayPal.",
-    "Do you offer customer support?": "Yes, our support team is available 24/7 via chat and email.",
+    "What is your return policy?": "Our return policy lasts 30 days.",
+    "How can I track my order?": "You can track your order using the tracking link sent to your email.",
+    "Do you offer international shipping?": "Yes, we ship internationally with additional charges.",
+    "How do I reset my password?": "Click on 'Forgot Password' at login to reset your password."
 }
 
-# Preprocessing function
-stop_words = set(stopwords.words("english"))
-
+# Simple preprocessing function without nltk
 def preprocess(text):
-    tokens = word_tokenize(text.lower())
-    cleaned = [word for word in tokens if word not in stop_words and word not in string.punctuation]
-    return ' '.join(cleaned)
+    text = text.lower()
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    return text
 
-# Preprocess FAQ questions
+# Preprocess questions
 faq_questions = list(faqs.keys())
 preprocessed_questions = [preprocess(q) for q in faq_questions]
 
-# TF-IDF Vectorizer
+# Vectorize questions
 vectorizer = TfidfVectorizer()
 faq_vectors = vectorizer.fit_transform(preprocessed_questions)
 
@@ -45,13 +31,12 @@ st.title("FAQ Chatbot")
 user_input = st.text_input("Ask a question:")
 
 if user_input:
-    user_input_processed = preprocess(user_input)
-    user_vector = vectorizer.transform([user_input_processed])
-    similarities = cosine_similarity(user_vector, faq_vectors)
-    best_match_index = similarities.argmax()
-    best_match_score = similarities[0][best_match_index]
-    
-    if best_match_score > 0.2:
-        st.write("Answer:", faqs[faq_questions[best_match_index]])
+    preprocessed_input = preprocess(user_input)
+    input_vector = vectorizer.transform([preprocessed_input])
+    similarity_scores = cosine_similarity(input_vector, faq_vectors)
+    best_match_idx = similarity_scores.argmax()
+
+    if similarity_scores[0][best_match_idx] > 0.3:
+        st.success(f"**Answer:** {faqs[faq_questions[best_match_idx]]}")
     else:
-        st.write("Sorry, I couldn't find a matching answer.")
+        st.warning("Sorry, I couldn't find a relevant answer.")
