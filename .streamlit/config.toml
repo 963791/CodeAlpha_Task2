@@ -1,4 +1,0 @@
-[server]
-headless = true
-enableCORS = false
-port = $PORT # Enables CORS protection for security in production.
